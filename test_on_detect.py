@@ -1,12 +1,14 @@
+"""
+
+	the main problem is EPSILON with we need aproximade objects the same classes
+	on pack of frames 
+	EPSILON is very suitable about distance and scale's objects 
+
+"""
 import numpy as np
 import argparse
 import time
 import cv2
-
-def slice_window(detect_array, frame, h , w):
-	pass
-
-
 
 
 ap = argparse.ArgumentParser()
@@ -24,7 +26,7 @@ args = vars(ap.parse_args())
 f = open("classes.txt", 'r')
 CLASSES = [line.strip() for line in f]	
 COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 4))
-SIZE_WINDOW = 3
+SIZE_WINDOW = 7
 # load serialized model
 print("[INFO] loading model...")
 #net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
@@ -37,7 +39,7 @@ if args["video"]:
 	vs = cv2.VideoCapture(args["video"])
 else:
 	vs = cv2.VideoCapture(0)
-	time.sleep(2.0)
+	time.sleep(1.0)
 start_time = time.time()
 num_frames = 0
 
@@ -55,14 +57,14 @@ while True:
 	# grab the frame dimensions and convert it to a blob
 	h = frame.shape[0]
 	w = frame.shape[1]
-	#h = 300
-	#w = 300
-	# for noraml view
+
+	# for normal view
+	"""
 	if not args["video"]:
 		center = (w / 2, h / 2)
 		M = cv2.getRotationMatrix2D(center, 270, 1.0)
 		frame = cv2.warpAffine(frame, M, (w, h))
-
+	"""
 	blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
 		0.007843, (300, 300), 127.5)
 
@@ -107,9 +109,8 @@ while True:
 		len_loop = 0 # size of loop 
 		av_confidence = 0 # avarage confidence of the same class
 		(last_start_X, last_start_Y, last_end_X, last_end_Y) = classes_array[0][1:5]
-		EPSILON = 0.2 # epsilon square to detect same model
+		EPSILON = 0.01 # epsilon square to detect same model
 
-		print(classes_array)
 
 		for cur_class in classes_array:
 			# take data about current class on classes_array 
@@ -117,13 +118,25 @@ while True:
 			(start_X, start_Y, end_X, end_Y) = cur_class[1:5] 
 			av_coords += (start_X, start_Y, end_X, end_Y) * np.array([w, h, w, h])
 			av_confidence += cur_class[5]
-			#print((start_X, start_Y, end_X, end_Y))
 
 			idx = cur_class[0]
-			if last_idx == idx and len_loop != len(classes_array) - 1 and abs(last_start_X - start_X) <= EPSILON and abs(last_start_Y - start_Y) <= EPSILON and abs(last_end_X - end_X) <= EPSILON and abs(last_end_X - end_Y) <= EPSILON:
+			"""
+			print(cur_class)
+			print("[INFO] {}".format(abs(last_start_X - start_X)))
+			print("[INFO] {}".format(abs(last_start_Y - start_Y)))
+			print("[INFO] {}".format(abs(last_end_X - end_X)))
+			print("[INFO] {}".format(abs(last_end_Y - end_Y)))
+			"""
+			cur_center_X = (start_X + end_X) / 2.0
+			cur_center_Y = (start_Y + end_Y) / 2.0
+			last_center_X = (last_start_X + last_end_X) / 2.0
+			last_center_Y = (last_start_Y + last_end_Y) / 2.0
+
+			if last_idx == idx and len_loop != len(classes_array) - 1 and count < 5 and abs(cur_center_X - last_center_X) <= EPSILON and abs(cur_center_Y - last_center_Y) <= EPSILON:
 				count += 1
+				print("[COUNT] {} [IDX] {}".format(count, idx))
 			else:
-				if count > 1:
+				if count > 2:
 					# take geometric mean
 					box = av_coords / count
 					av_confidence /= count
@@ -139,15 +152,16 @@ while True:
 
 				av_coords = np.zeros((1,4))
 				av_confidence = 0
-				count = 2
+				count = 1
 
 			(last_start_X, last_start_Y, last_end_X, last_end_Y) = (start_X, start_Y, end_X, end_Y)
 			last_idx = idx
 			len_loop += 1
 				
 
-	# show the output frame
-	cv2.imshow("Frame", frame)
+		# show the output frame
+		cv2.imshow("Frame", frame)
+
 	key = cv2.waitKey(1) & 0xFF
 
 	# if the `q` key was pressed, break from the loop

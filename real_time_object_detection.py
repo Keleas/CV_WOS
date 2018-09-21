@@ -1,9 +1,14 @@
-from imutils.video import FPS
+"""
+
+	THE FIRST VERSION OF DETECT ALGO
+	simple detect object without splay window and flowing (aprox) detection
+
+"""
 import numpy as np
 import argparse
 import time
 import cv2
-
+import imutils
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--prototxt", required=True,
@@ -23,8 +28,8 @@ COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
 
 # load serialized model
 print("[INFO] loading model...")
-#net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
-net = cv2.dnn.readNetFromTensorflow(args["model"], args["prototxt"]) 
+net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
+#net = cv2.dnn.readNetFromTensorflow(args["model"], args["prototxt"]) 
 
 # initialize the video stream and time timer
 print("[INFO] starting video stream...")
@@ -43,17 +48,19 @@ while True:
 	if frame is None:
 		break
 	num_frames += 1
-	frame = cv2.resize(frame, (1440, 900))
+	frame = imutils.resize(frame, width=600)
 
 	# grab the frame dimensions and convert it to a blob
 	h = frame.shape[0]
 	w = frame.shape[1]
 
 	# for noraml view
+	"""
 	if not args["video"]:
 		center = (w / 2, h / 2)
 		M = cv2.getRotationMatrix2D(center, 270, 1.0)
 		frame = cv2.warpAffine(frame, M, (w, h))
+	"""
 
 	blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
 		0.007843, (300, 300), 127.5)
@@ -86,6 +93,7 @@ while True:
 				cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
 
 	# show the output frame
+	#time.sleep(0.1)
 	cv2.imshow("Frame", frame)
 	key = cv2.waitKey(1) & 0xFF
 
